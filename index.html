@@ -1,0 +1,1090 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flash Cards — พ.ร.บ.มาตรฐานทางจริยธรรม 2562</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&family=Kanit:wght@300;400;500;600;700;800;900&family=Sarabun:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0E1420;
+  --bg-card: #161D2E;
+  --bg-card-hover: #1C2540;
+  --surface: #1E2738;
+  --amber: #F0B830;
+  --amber-dim: #C89820;
+  --amber-glow: rgba(240,184,48,0.15);
+  --teal: #2DD4A8;
+  --teal-dim: #1A9E7A;
+  --rose: #F06292;
+  --blue: #42A5F5;
+  --text: #E8ECF4;
+  --text-dim: #8B95A8;
+  --text-muted: #5A6478;
+  --correct: #2DD4A8;
+  --wrong: #F06292;
+  --radius: 20px;
+  --radius-sm: 12px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Sarabun', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.7;
+}
+
+/* === AMBIENT BACKGROUND === */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 15% 20%, rgba(240,184,48,0.06) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 80%, rgba(45,212,168,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(66,165,245,0.03) 0%, transparent 60%);
+}
+
+/* === HEADER === */
+.header {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 2.5rem 1.5rem 1.5rem;
+}
+
+.header-label {
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--amber);
+  background: var(--amber-glow);
+  display: inline-block;
+  padding: 5px 16px;
+  border-radius: 100px;
+  border: 1px solid rgba(240,184,48,0.2);
+  margin-bottom: 1rem;
+}
+
+.header h1 {
+  font-family: 'Kanit', sans-serif;
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.header h1 span { color: var(--amber); }
+
+/* === STATS BAR === */
+.stats-bar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  padding: 0 1.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.stat .num {
+  font-family: 'Kanit', sans-serif;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.stat .num.green { color: var(--correct); }
+.stat .num.pink { color: var(--wrong); }
+.stat .num.amber { color: var(--amber); }
+
+/* === PROGRESS BAR === */
+.progress-wrap {
+  position: relative;
+  z-index: 10;
+  max-width: 500px;
+  margin: 0 auto 1.5rem;
+  padding: 0 2rem;
+}
+
+.progress-track {
+  height: 6px;
+  background: var(--surface);
+  border-radius: 100px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--amber), var(--teal));
+  border-radius: 100px;
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  width: 0%;
+}
+
+/* === CATEGORY FILTERS === */
+.filters {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 7px 16px;
+  border-radius: 100px;
+  border: 1px solid var(--text-muted);
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.filter-btn:hover {
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.filter-btn.active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: var(--bg);
+  font-weight: 700;
+}
+
+/* === CARD AREA === */
+.card-area {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 1.5rem;
+  min-height: 380px;
+  perspective: 1200px;
+  margin-bottom: 1.5rem;
+}
+
+/* === FLASHCARD === */
+.flashcard {
+  width: 100%;
+  max-width: 520px;
+  min-height: 340px;
+  position: relative;
+  cursor: pointer;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.flashcard.flipped { transform: rotateY(180deg); }
+
+.flashcard-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  border-radius: var(--radius);
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.flashcard-front {
+  background: linear-gradient(145deg, var(--bg-card) 0%, var(--bg-card-hover) 100%);
+  border: 1px solid rgba(240,184,48,0.15);
+  box-shadow:
+    0 4px 30px rgba(0,0,0,0.3),
+    0 0 60px rgba(240,184,48,0.05);
+}
+
+.flashcard-back {
+  background: linear-gradient(145deg, #1A2A20 0%, #162418 100%);
+  border: 1px solid rgba(45,212,168,0.2);
+  box-shadow:
+    0 4px 30px rgba(0,0,0,0.3),
+    0 0 60px rgba(45,212,168,0.05);
+  transform: rotateY(180deg);
+}
+
+.card-category {
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 4px 14px;
+  border-radius: 100px;
+  margin-bottom: 1.2rem;
+}
+
+.cat-basics { background: rgba(66,165,245,0.15); color: var(--blue); }
+.cat-definitions { background: rgba(240,184,48,0.15); color: var(--amber); }
+.cat-standards { background: rgba(45,212,168,0.15); color: var(--teal); }
+.cat-committee { background: rgba(240,98,146,0.15); color: var(--rose); }
+.cat-chapter3 { background: rgba(156,136,255,0.15); color: #9C88FF; }
+.cat-pitfalls { background: rgba(255,107,107,0.15); color: #FF6B6B; }
+
+.card-question {
+  font-family: 'Kanit', sans-serif;
+  font-size: clamp(1.1rem, 3vw, 1.4rem);
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 440px;
+}
+
+.card-hint {
+  margin-top: 1.5rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.card-answer {
+  font-size: clamp(1rem, 2.5vw, 1.15rem);
+  line-height: 1.8;
+  color: rgba(255,255,255,0.9);
+  max-width: 440px;
+}
+
+.card-answer strong {
+  color: var(--teal);
+  font-weight: 700;
+}
+
+.card-answer .key {
+  display: inline-block;
+  background: rgba(45,212,168,0.12);
+  color: var(--teal);
+  padding: 2px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.95em;
+}
+
+/* === CONTROLS === */
+.controls {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 0 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.ctrl-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 1.3rem;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ctrl-btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--amber);
+  color: var(--amber);
+  transform: scale(1.08);
+}
+
+.ctrl-btn:active { transform: scale(0.95); }
+
+.ctrl-btn.big {
+  width: 64px;
+  height: 64px;
+  font-size: 1.5rem;
+  background: var(--amber);
+  color: var(--bg);
+  border-color: var(--amber);
+}
+
+.ctrl-btn.big:hover {
+  background: var(--amber-dim);
+  border-color: var(--amber-dim);
+  color: var(--bg);
+}
+
+/* === SELF-ASSESS BUTTONS === */
+.assess-row {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 0 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.assess-btn {
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 10px 28px;
+  border-radius: 100px;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assess-btn:active { transform: scale(0.95); }
+
+.assess-btn.know {
+  background: rgba(45,212,168,0.15);
+  color: var(--correct);
+  border: 1px solid rgba(45,212,168,0.3);
+}
+
+.assess-btn.know:hover {
+  background: rgba(45,212,168,0.25);
+}
+
+.assess-btn.dunno {
+  background: rgba(240,98,146,0.15);
+  color: var(--wrong);
+  border: 1px solid rgba(240,98,146,0.3);
+}
+
+.assess-btn.dunno:hover {
+  background: rgba(240,98,146,0.25);
+}
+
+/* === CARD COUNTER === */
+.counter {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  margin-bottom: 1rem;
+}
+
+.counter .current {
+  color: var(--amber);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* === SWIPE ANIMATION === */
+.flashcard.slide-left {
+  animation: slideLeft 0.4s ease-out;
+}
+.flashcard.slide-right {
+  animation: slideRight 0.4s ease-out;
+}
+
+@keyframes slideLeft {
+  0% { opacity: 1; transform: translateX(0); }
+  40% { opacity: 0; transform: translateX(-80px) rotateY(-8deg); }
+  60% { opacity: 0; transform: translateX(80px) rotateY(8deg); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideRight {
+  0% { opacity: 1; transform: translateX(0); }
+  40% { opacity: 0; transform: translateX(80px) rotateY(8deg); }
+  60% { opacity: 0; transform: translateX(-80px) rotateY(-8deg); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+/* === COMPLETION SCREEN === */
+.completion {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 3rem 2rem;
+  display: none;
+}
+
+.completion.show { display: block; }
+
+.completion-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.completion h2 {
+  font-family: 'Kanit', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--amber);
+  margin-bottom: 0.5rem;
+}
+
+.completion p {
+  color: var(--text-dim);
+  margin-bottom: 2rem;
+  font-size: 1.05rem;
+}
+
+.completion-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+.completion-stat {
+  text-align: center;
+}
+
+.completion-stat .big-num {
+  font-family: 'Kanit', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 900;
+}
+
+.completion-stat .label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.restart-btn {
+  font-family: 'Kanit', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  padding: 14px 36px;
+  border-radius: 100px;
+  border: none;
+  background: var(--amber);
+  color: var(--bg);
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.restart-btn:hover {
+  background: var(--amber-dim);
+  transform: scale(1.05);
+}
+
+/* === KEYBOARD HINTS === */
+.keyboard-hints {
+  position: relative;
+  z-index: 10;
+  text-align: center;
+  padding: 1rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.keyboard-hints kbd {
+  display: inline-block;
+  background: var(--surface);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px;
+  padding: 2px 8px;
+  font-family: 'Kanit', sans-serif;
+  font-size: 0.7rem;
+  margin: 0 2px;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 600px) {
+  .flashcard-face { padding: 1.5rem; }
+  .card-area { min-height: 320px; }
+  .ctrl-btn { width: 48px; height: 48px; font-size: 1.1rem; }
+  .ctrl-btn.big { width: 56px; height: 56px; font-size: 1.3rem; }
+  .assess-btn { padding: 8px 20px; font-size: 0.8rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-label">Flash Cards — ทบทวนกันลืม</div>
+  <h1>พ.ร.บ.มาตรฐานทาง<span>จริยธรรม</span> 2562</h1>
+</div>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat">📇 <span class="num amber" id="totalCount">0</span> ใบ</div>
+  <div class="stat">✅ <span class="num green" id="knowCount">0</span> จำได้</div>
+  <div class="stat">❌ <span class="num pink" id="dunnoCount">0</span> ทบทวน</div>
+</div>
+
+<!-- PROGRESS -->
+<div class="progress-wrap">
+  <div class="progress-track">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+</div>
+
+<!-- FILTERS -->
+<div class="filters" id="filters"></div>
+
+<!-- COUNTER -->
+<div class="counter" id="counter"></div>
+
+<!-- CARD AREA -->
+<div class="card-area" id="cardArea">
+  <div class="flashcard" id="flashcard" onclick="flipCard()">
+    <div class="flashcard-face flashcard-front" id="frontFace"></div>
+    <div class="flashcard-face flashcard-back" id="backFace"></div>
+  </div>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls" id="controls">
+  <button class="ctrl-btn" onclick="prevCard()" title="ย้อนกลับ">◀</button>
+  <button class="ctrl-btn" onclick="flipCard()" title="พลิกการ์ด">🔄</button>
+  <button class="ctrl-btn big" onclick="nextCard()" title="ใบถัดไป">▶</button>
+  <button class="ctrl-btn" onclick="shuffleCards()" title="สุ่มใหม่">🔀</button>
+</div>
+
+<!-- SELF-ASSESS -->
+<div class="assess-row" id="assessRow">
+  <button class="assess-btn know" onclick="markKnow()">✅ จำได้แล้ว</button>
+  <button class="assess-btn dunno" onclick="markDunno()">🔁 ต้องทบทวน</button>
+</div>
+
+<!-- KEYBOARD HINTS -->
+<div class="keyboard-hints">
+  <kbd>Space</kbd> พลิก &nbsp; <kbd>◀</kbd><kbd>▶</kbd> เปลี่ยนใบ &nbsp; <kbd>1</kbd> จำได้ &nbsp; <kbd>2</kbd> ทบทวน
+</div>
+
+<!-- COMPLETION -->
+<div class="completion" id="completion">
+  <div class="completion-icon">🎉</div>
+  <h2>ครบทุกใบแล้ว!</h2>
+  <p>ดูสรุปผลการทบทวนด้านล่าง</p>
+  <div class="completion-stats">
+    <div class="completion-stat">
+      <div class="big-num" style="color:var(--correct)" id="finalKnow">0</div>
+      <div class="label">จำได้</div>
+    </div>
+    <div class="completion-stat">
+      <div class="big-num" style="color:var(--wrong)" id="finalDunno">0</div>
+      <div class="label">ต้องทบทวน</div>
+    </div>
+  </div>
+  <button class="restart-btn" onclick="restart()">🔄 เริ่มใหม่ทั้งหมด</button>
+  <br><br>
+  <button class="restart-btn" style="background:var(--rose)" onclick="restartWeak()">🔁 ทบทวนเฉพาะข้อที่พลาด</button>
+  <div class="keyboard-hints" style="margin-top:1.5rem;">
+    <kbd>R</kbd> เริ่มใหม่ทั้งหมด &nbsp; <kbd>T</kbd> ทบทวนข้อที่พลาด
+  </div>
+</div>
+
+<script>
+const ALL_CARDS = [
+  // === ข้อมูลพื้นฐาน ===
+  {
+    cat: "basics", catLabel: "ข้อมูลพื้นฐาน",
+    q: "พ.ร.บ.มาตรฐานทางจริยธรรม 2562 ออกมาเพราะมาตราใดของรัฐธรรมนูญ?",
+    a: "<strong>มาตรา 76 วรรคสาม</strong> ของรัฐธรรมนูญ พ.ศ. 2560 สั่งให้รัฐจัดทำมาตรฐานทางจริยธรรม"
+  },
+  {
+    cat: "basics", catLabel: "ข้อมูลพื้นฐาน",
+    q: "พ.ร.บ.มาตรฐานทางจริยธรรม 2562 มีผลบังคับใช้เมื่อไร?",
+    a: "<span class='key'>17 เมษายน พ.ศ. 2562</span>"
+  },
+  {
+    cat: "basics", catLabel: "ข้อมูลพื้นฐาน",
+    q: "ผู้รักษาการตาม พ.ร.บ.มาตรฐานทางจริยธรรม คือใคร?",
+    a: "<span class='key'>นายกรัฐมนตรี</span><br>(มีอำนาจออกประกาศ แก้ไข เพิ่มเติม)"
+  },
+  {
+    cat: "basics", catLabel: "ข้อมูลพื้นฐาน",
+    q: "ผู้รับสนองพระบรมราชโองการ คือใคร?",
+    a: "<span class='key'>พลเอก ประยุทธ์ จันทร์โอชา</span> นายกรัฐมนตรี"
+  },
+  {
+    cat: "basics", catLabel: "ข้อมูลพื้นฐาน",
+    q: "พ.ร.บ.มาตรฐานทางจริยธรรม ออกโดยคำแนะนำและยินยอมของใคร?",
+    a: "<span class='key'>สภานิติบัญญัติแห่งชาติ</span> ทำหน้าที่รัฐสภา<br>(ไม่ใช่รัฐสภาปกติ เพราะเป็นช่วงหลังรัฐประหาร)"
+  },
+  {
+    cat: "basics", catLabel: "ข้อมูลพื้นฐาน",
+    q: "พ.ร.บ.มาตรฐานทางจริยธรรม แบ่งเป็นกี่หมวด อะไรบ้าง?",
+    a: "<strong>3 หมวด</strong><br>1. มาตรฐานทางจริยธรรมและประมวลจริยธรรม<br>2. คณะกรรมการมาตรฐานทางจริยธรรม<br>3. การรักษาจริยธรรมของเจ้าหน้าที่ของรัฐ"
+  },
+  {
+    cat: "basics", catLabel: "ข้อมูลพื้นฐาน",
+    q: "เหตุผลในการประกาศใช้ พ.ร.บ.มาตรฐานทางจริยธรรม คืออะไร?",
+    a: "เพื่อให้หน่วยงานของรัฐใช้เป็นหลักในการกำหนด<span class='key'>ประมวลจริยธรรม</span>สำหรับเจ้าหน้าที่ของรัฐ<br><br>⚠️ ระวังตัวลวง: \"ประมวล<u>คุณธรรม</u>\" → ผิด!"
+  },
+
+  // === บทนิยาม ===
+  {
+    cat: "definitions", catLabel: "บทนิยาม",
+    q: "\"หน่วยงานของรัฐ\" ตาม พ.ร.บ.นี้ รวมอะไรบ้าง?",
+    a: "กระทรวง ทบวง กรม / ส่วนราชการที่มีฐานะเป็นกรม / ราชการส่วนท้องถิ่น / รัฐวิสาหกิจ / องค์การมหาชน / หน่วยงานอื่นของรัฐใน<span class='key'>ฝ่ายบริหาร</span>"
+  },
+  {
+    cat: "definitions", catLabel: "บทนิยาม",
+    q: "\"หน่วยงานของรัฐ\" ไม่รวมหน่วยงานธุรการของอะไรบ้าง? (4 กลุ่ม)",
+    a: "1. <strong>รัฐสภา</strong> (สนง.เลขาฯวุฒิสภา, สนง.เลขาฯสภาผู้แทนฯ, สถาบันพระปกเกล้า)<br>2. <strong>องค์กรอิสระ</strong> (กกต., ผผ., ป.ป.ช., ค.ต.ง., กสม.)<br>3. <strong>ศาล</strong> (ศาลยุติธรรม, ศาลปกครอง, ศาลทหาร, ศาลรธน.)<br>4. <strong>องค์กรอัยการ</strong>"
+  },
+  {
+    cat: "definitions", catLabel: "บทนิยาม",
+    q: "สำนักงานศาลยุติธรรม เป็น \"หน่วยงานของรัฐ\" ตาม พ.ร.บ.นี้หรือไม่?",
+    a: "<span class='key'>ไม่ใช่!</span><br>เพราะเป็นหน่วยงานธุรการของ \"ศาล\" ซึ่งอยู่ในข้อยกเว้น"
+  },
+  {
+    cat: "definitions", catLabel: "บทนิยาม",
+    q: "ค.ต.ง. (คณะกรรมการตรวจเงินแผ่นดิน) เป็นหน่วยงานของรัฐตาม พ.ร.บ.นี้หรือไม่?",
+    a: "<span class='key'>ไม่ใช่!</span><br>ค.ต.ง. เป็น \"องค์กรอิสระตามรัฐธรรมนูญ\" อยู่ในข้อยกเว้น"
+  },
+  {
+    cat: "definitions", catLabel: "บทนิยาม",
+    q: "\"เจ้าหน้าที่ของรัฐ\" ตาม พ.ร.บ.นี้ หมายถึงใคร?",
+    a: "<span class='key'>ข้าราชการ + พนักงาน + ลูกจ้าง + ผู้ปฏิบัติงานอื่น</span><br>ใน \"หน่วยงานของรัฐ\" (ฝ่ายบริหารเท่านั้น)"
+  },
+  {
+    cat: "definitions", catLabel: "บทนิยาม",
+    q: "\"กรรมการ\" ตาม พ.ร.บ.นี้ หมายถึงอะไร?",
+    a: "<span class='key'>กรรมการมาตรฐานทางจริยธรรม (กมจ.)</span>"
+  },
+  {
+    cat: "definitions", catLabel: "บทนิยาม",
+    q: "องค์กรกลางบริหารงานบุคคลของข้าราชการครูฯ คือหน่วยงานใด?",
+    a: "<span class='key'>ก.ค.ศ.</span> (คณะกรรมการข้าราชการครูและบุคลากรทางการศึกษา)<br><br>⚠️ ไม่ใช่คุรุสภา! (คุรุสภาดูเรื่องใบประกอบวิชาชีพ)"
+  },
+
+  // === มาตรฐาน 7 ข้อ ===
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "มาตรฐานทางจริยธรรมมีกี่ประการ? สูตรท่องจำคืออะไร?",
+    a: "<strong>7 ประการ</strong><br><br><span class='key'>ยึด ซื่อ กล้า คิด มุ่ง ธรรม ดี</span><br><br>สถาบัน + ซื่อสัตย์ + ตัดสิน + ส่วนรวม + สัมฤทธิ์ + เป็นธรรม + ดำรง"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "มาตรฐานข้อ 1 คืออะไร?",
+    a: "<span class='key'>ยึดมั่นในสถาบันหลักของประเทศ</span><br>ชาติ ศาสนา พระมหากษัตริย์ และการปกครองระบอบประชาธิปไตยอันมีพระมหากษัตริย์ทรงเป็นประมุข"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "มาตรฐานข้อ 2 คืออะไร?",
+    a: "<span class='key'>ซื่อสัตย์สุจริต มีจิตสำนึกที่ดี และรับผิดชอบต่อหน้าที่</span><br><br>เน้น: ไม่โกง ไม่ละทิ้ง/ทอดทิ้งหน้าที่ รู้ผิดก็รีบแก้ไข"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "มาตรฐานข้อ 5 คืออะไร? ระวังคำลวงอะไร?",
+    a: "<span class='key'>มุ่งผลสัมฤทธิ์ของงาน</span><br><br>⚠️ คำลวง: \"มุ่งผลสัมฤทธิ์ของงาน<u>และของตน</u>\" → ผิด!<br>ต้องเป็น \"ของงาน\" เท่านั้น"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "มาตรฐานข้อ 7 คืออะไร? ระวังคำลวงอะไร?",
+    a: "<span class='key'>ดำรงตนเป็นแบบอย่างที่ดีและรักษาภาพลักษณ์ของทางราชการ</span><br><br>⚠️ คำลวง: \"รักษาภาพพจน์<u>ของตัวเอง</u>\" → ผิด!<br>ต้องเป็น \"ของทางราชการ\""
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "ข้อใด ไม่ใช่ มาตรฐานทางจริยธรรม 7 ข้อ?<br>ก. มุ่งผลสัมฤทธิ์ของงาน<br>ข. การแสวงหาความรู้ใหม่เป็นการเฉพาะ<br>ค. กล้าตัดสินใจ",
+    a: "ตอบ <span class='key'>ข.</span> การแสวงหาความรู้ใหม่เป็นการเฉพาะ<br><br>ไม่มีอยู่ในมาตรฐาน 7 ข้อ"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "ครูนก ไม่เข้าร่วมประชุมแต่ให้เพื่อนลงชื่อแทน → ขาดมาตรฐานข้อใด?",
+    a: "ครูนก <strong>ทอดทิ้งราชการ</strong> (มาแต่ไม่ทำหน้าที่)<br>ขาดมาตรฐานข้อ <span class='key'>2 — ซื่อสัตย์สุจริต มีจิตสำนึกที่ดี และรับผิดชอบต่อหน้าที่</span>"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "ครูมด มาลงชื่อปฏิบัติราชการ แต่ไม่เข้าสอน เล่นโซเชียลทั้งวัน → ขาดมาตรฐานข้อใด?",
+    a: "ครูมด <strong>ทอดทิ้งราชการ</strong><br>ขาดมาตรฐานข้อ <span class='key'>2 — ซื่อสัตย์สุจริต มีจิตสำนึกที่ดี และรับผิดชอบต่อหน้าที่</span>"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "ครูแมว สั่งซื้ออุปกรณ์สูงกว่าราคากลาง 50% → ขาดมาตรฐานข้อใด?",
+    a: "ขาดมาตรฐานข้อ <span class='key'>4 — คิดถึงประโยชน์ส่วนรวมมากกว่าประโยชน์ส่วนตัว</span><br><br>⚠️ ไม่ใช่ข้อ 2 (ซื่อสัตย์)! เพราะเน้นที่ทำให้หน่วยงานเสียเงินเกิน = ไม่คิดถึงส่วนรวม"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "ครูหนึ่งแต่งกายถูกระเบียบ ติดเครื่องหมายถูกต้อง → สอดคล้องกับมาตรฐานข้อใด?",
+    a: "ข้อ <span class='key'>7 — ดำรงตนเป็นแบบอย่างที่ดีและรักษาภาพลักษณ์ของทางราชการ</span>"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "ข้าราชการครูชักชวนเพื่อนเล่นแชร์ลูกโซ่โดยอวดอ้างตำแหน่ง → ขาดมาตรฐานข้อใด?",
+    a: "ขาดมาตรฐานข้อ <span class='key'>1 — ซื่อสัตย์สุจริต มีจิตสำนึกที่ดี และรับผิดชอบต่อหน้าที่</span>"
+  },
+  {
+    cat: "standards", catLabel: "มาตรฐาน 7 ข้อ",
+    q: "\"ละทิ้งราชการ\" กับ \"ทอดทิ้งราชการ\" ต่างกันอย่างไร?",
+    a: "<strong>ละทิ้ง</strong> = ไม่มาทำงานเลย (หายไป)<br><strong>ทอดทิ้ง</strong> = มาทำงานแต่<u>ไม่ทำหน้าที่</u><br><br>เช่น มาลงชื่อแต่ไม่สอน = <span class='key'>ทอดทิ้ง</span>"
+  },
+
+  // === ผู้จัดทำประมวลจริยธรรม ===
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ใครเป็นผู้จัดทำประมวลจริยธรรมของข้าราชการครูและบุคลากรทางการศึกษา?",
+    a: "<span class='key'>ก.ค.ศ.</span> (คณะกรรมการข้าราชการครูและบุคลากรทางการศึกษา)<br><br>⚠️ ไม่ใช่คุรุสภา / ไม่ใช่ ก.ม.จ. / ไม่ใช่ กมว."
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ใครจัดทำประมวลจริยธรรมของข้าราชการพลเรือน?",
+    a: "<span class='key'>ก.พ.</span> (คณะกรรมการข้าราชการพลเรือน)"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ใครจัดทำประมวลจริยธรรมของข้าราชการทหาร?",
+    a: "<span class='key'>สภากลาโหม</span><br>(เพราะข้าราชการทหารไม่มีองค์กรกลางบริหารงานบุคคล)"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ใครจัดทำประมวลจริยธรรมของข้าราชการการเมือง?",
+    a: "<span class='key'>คณะรัฐมนตรี (ครม.)</span>"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ถ้ามีปัญหาว่าองค์กรใดเป็นผู้จัดทำประมวลจริยธรรม → ใครวินิจฉัย?",
+    a: "<span class='key'>ก.ม.จ.</span> (คณะกรรมการมาตรฐานทางจริยธรรม)"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ก.ม.จ. ย่อมาจากอะไร?",
+    a: "<span class='key'>คณะกรรมการมาตรฐานทางจริยธรรม</span>"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ประธาน ก.ม.จ. คือใคร?",
+    a: "<span class='key'>นายกรัฐมนตรี หรือ รองนายกฯ ที่นายกฯ มอบหมาย</span>"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "รองประธาน ก.ม.จ. คือใคร?",
+    a: "<span class='key'>ผู้แทน ก.พ.</span> ที่ได้รับมอบหมาย"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "กรรมการและเลขานุการ ก.ม.จ. คือใคร?",
+    a: "<span class='key'>เลขาธิการ ก.พ.</span><br><br>⚠️ ไม่ใช่เลขาธิการ ก.พ.ร.!"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ใครทำหน้าที่ปฏิบัติงานธุรการ ก.ม.จ.?",
+    a: "<span class='key'>สำนักงาน ก.พ.</span><br>(สำนักงานคณะกรรมการข้าราชการพลเรือน)<br><br>⚠️ ไม่ใช่สำนักนายกรัฐมนตรี!"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ผู้ทรงคุณวุฒิ ก.ม.จ. มีจำนวนเท่าไร? คุณสมบัติ? วาระ?",
+    a: "จำนวน: <span class='key'>ไม่เกิน 5 คน</span><br>คุณสมบัติ: สัญชาติไทย อายุ <span class='key'>≥ 45 ปี</span><br>วาระ: คราวละ <span class='key'>3 ปี</span> ไม่เกิน <span class='key'>2 วาระ</span>"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "ก.ม.จ. ต้องทบทวนมาตรฐานทางจริยธรรมทุกกี่ปี?",
+    a: "ทุก <span class='key'>5 ปี</span><br>หรือเร็วกว่าถ้ามีความจำเป็นหรือสถานการณ์เปลี่ยนแปลง"
+  },
+  {
+    cat: "committee", catLabel: "ผู้จัดทำ / ก.ม.จ.",
+    q: "กรรมการโดยตำแหน่งใน ก.ม.จ. มี 5 คน มาจากไหนบ้าง?",
+    a: "ผู้แทนจาก:<br>1. <strong>ก.พ.อ.</strong><br>2. <strong>ก.ค.ศ.</strong><br>3. <strong>ก.ตร.</strong><br>4. <strong>ก.ถ.</strong><br>5. <strong>สภากลาโหม</strong><br><br>⚠️ ไม่มี ก.พ. (ไปเป็นรองประธาน) และไม่มี ก.ก."
+  },
+
+  // === หมวด 3 ===
+  {
+    cat: "chapter3", catLabel: "หมวด 3",
+    q: "หน่วยงานของรัฐต้องทำ 3 อย่างอะไรบ้าง เพื่อรักษาจริยธรรม?",
+    a: "<span class='key'>กำหนด + ส่งเสริม + รายงาน</span><br><br>1. กำหนดผู้รับผิดชอบ<br>2. ส่งเสริม สนับสนุน ฝึกอบรม<br>3. ทุกสิ้นปีงบฯ จัดทำรายงานประจำปีเสนอ ก.ม.จ."
+  },
+  {
+    cat: "chapter3", catLabel: "หมวด 3",
+    q: "องค์กรกลางบริหารงานบุคคลมีหน้าที่อะไรตามหมวด 3?",
+    a: "✅ กำกับดูแลกระบวนการรักษาจริยธรรม<br>✅ ประเมินผลการปฏิบัติตามประมวลจริยธรรม<br>✅ จัดหลักสูตรฝึกอบรม<br>✅ กำหนดมาตรการจูงใจ<br><br>❌ <strong>ไม่ใช่:</strong> กำหนดแนวทางขับเคลื่อนภาพรวม (นั่นเป็นของ ก.ม.จ.)"
+  },
+
+  // === จุดตาย ===
+  {
+    cat: "pitfalls", catLabel: "จุดตาย/กับดัก",
+    q: "\"คุรุสภา\" กับ \"ก.ค.ศ.\" ต่างกันอย่างไร?",
+    a: "<strong>คุรุสภา</strong> = ดูเรื่อง<span class='key'>ใบอนุญาตประกอบวิชาชีพ</span><br><strong>ก.ค.ศ.</strong> = <span class='key'>องค์กรกลางบริหารงานบุคคล</span> + จัดทำประมวลจริยธรรมครู"
+  },
+  {
+    cat: "pitfalls", catLabel: "จุดตาย/กับดัก",
+    q: "\"ก.พ.\" กับ \"ก.พ.ร.\" ต่างกันอย่างไร?",
+    a: "<strong>ก.พ.</strong> (ตัวเดียว) = ข้าราชการพลเรือน / เลขานุการ ก.ม.จ. / ธุรการ ก.ม.จ.<br><br><strong>ก.พ.ร.</strong> = พัฒนาระบบราชการ (ไม่เกี่ยวกับ พ.ร.บ.นี้โดยตรง)"
+  },
+  {
+    cat: "pitfalls", catLabel: "จุดตาย/กับดัก",
+    q: "\"สมชายขับรถมาส่งเพื่อนครูทุกวัน\" เป็นมาตรฐานทางจริยธรรมหรือไม่?",
+    a: "<span class='key'>ไม่ใช่!</span><br>เป็นน้ำใจส่วนตัว แต่ไม่จัดอยู่ในมาตรฐาน 7 ข้อ<br><br>⚠️ โจทย์ชอบให้พฤติกรรม \"ดี\" แต่ไม่เข้ามาตรฐาน 7 ข้อ"
+  },
+  {
+    cat: "pitfalls", catLabel: "จุดตาย/กับดัก",
+    q: "ครูส้มสอนซ่อมเสริมช่วงพักกลางวันโดยเก็บค่าใช้จ่าย → ถือว่าอย่างไร?",
+    a: "<span class='key'>ขาดมาตรฐานทางจริยธรรม</span><br><br>เพราะใช้เวลาราชการแสวงหาผลประโยชน์ส่วนตัว ไม่คิดถึงประโยชน์ส่วนรวม"
+  },
+  {
+    cat: "pitfalls", catLabel: "จุดตาย/กับดัก",
+    q: "ถามว่า \"ใครจัดทำประมวลจริยธรรม\" → ดูคีย์เวิร์ดอะไร?",
+    a: "ถาม \"ใคร<strong>จัดทำ</strong>\" → <span class='key'>องค์กรกลางบริหารงานบุคคล</span><br><br>ถาม \"ใคร<strong>วินิจฉัย</strong>\" → <span class='key'>ก.ม.จ.</span>"
+  },
+  {
+    cat: "pitfalls", catLabel: "จุดตาย/กับดัก",
+    q: "พ.ร.บ.นี้ บังคับใช้กับองค์กรอิสระตามรัฐธรรมนูญหรือไม่?",
+    a: "<span class='key'>ไม่บังคับใช้!</span><br><br>เพราะหน่วยงานธุรการขององค์กรอิสระ (กกต., ผผ., ป.ป.ช., ค.ต.ง., กสม.) ถูกยกเว้นจากคำนิยาม \"หน่วยงานของรัฐ\""
+  }
+];
+
+// === STATE ===
+let cards = [];
+let currentIndex = 0;
+let isFlipped = false;
+let knownSet = new Set();
+let dunnoSet = new Set();
+let currentFilter = 'all';
+let isCompleted = false;
+
+// === INIT ===
+function init() {
+  cards = [...ALL_CARDS];
+  currentIndex = 0;
+  isFlipped = false;
+  isCompleted = false;
+  knownSet.clear();
+  dunnoSet.clear();
+  renderFilters();
+  renderCard();
+  updateStats();
+  document.getElementById('completion').classList.remove('show');
+  document.getElementById('cardArea').style.display = '';
+  document.getElementById('controls').style.display = '';
+  document.getElementById('assessRow').style.display = '';
+  document.getElementById('counter').style.display = '';
+}
+
+function renderFilters() {
+  const cats = [
+    { id: 'all', label: 'ทั้งหมด' },
+    { id: 'basics', label: 'ข้อมูลพื้นฐาน' },
+    { id: 'definitions', label: 'บทนิยาม' },
+    { id: 'standards', label: 'มาตรฐาน 7 ข้อ' },
+    { id: 'committee', label: 'ผู้จัดทำ / ก.ม.จ.' },
+    { id: 'chapter3', label: 'หมวด 3' },
+    { id: 'pitfalls', label: 'จุดตาย' }
+  ];
+  const el = document.getElementById('filters');
+  el.innerHTML = cats.map(c =>
+    `<button class="filter-btn ${c.id === currentFilter ? 'active' : ''}" onclick="setFilter('${c.id}')">${c.label}</button>`
+  ).join('');
+}
+
+function setFilter(cat) {
+  currentFilter = cat;
+  if (cat === 'all') {
+    cards = [...ALL_CARDS];
+  } else {
+    cards = ALL_CARDS.filter(c => c.cat === cat);
+  }
+  currentIndex = 0;
+  isFlipped = false;
+  isCompleted = false;
+  knownSet.clear();
+  dunnoSet.clear();
+  renderFilters();
+  renderCard();
+  updateStats();
+  document.getElementById('completion').classList.remove('show');
+  document.getElementById('cardArea').style.display = '';
+  document.getElementById('controls').style.display = '';
+  document.getElementById('assessRow').style.display = '';
+  document.getElementById('counter').style.display = '';
+}
+
+function getCatClass(cat) {
+  const map = { basics:'cat-basics', definitions:'cat-definitions', standards:'cat-standards', committee:'cat-committee', chapter3:'cat-chapter3', pitfalls:'cat-pitfalls' };
+  return map[cat] || 'cat-basics';
+}
+
+function renderCard() {
+  if (cards.length === 0) return;
+  const card = cards[currentIndex];
+  const fc = document.getElementById('flashcard');
+  fc.classList.remove('flipped');
+  isFlipped = false;
+
+  document.getElementById('frontFace').innerHTML = `
+    <div class="card-category ${getCatClass(card.cat)}">${card.catLabel}</div>
+    <div class="card-question">${card.q}</div>
+    <div class="card-hint">แตะเพื่อดูคำตอบ</div>
+  `;
+  document.getElementById('backFace').innerHTML = `
+    <div class="card-category ${getCatClass(card.cat)}">${card.catLabel}</div>
+    <div class="card-answer">${card.a}</div>
+  `;
+
+  document.getElementById('counter').innerHTML =
+    `<span class="current">${currentIndex + 1}</span> / ${cards.length}`;
+}
+
+function flipCard() {
+  const fc = document.getElementById('flashcard');
+  isFlipped = !isFlipped;
+  fc.classList.toggle('flipped', isFlipped);
+}
+
+function nextCard() {
+  if (currentIndex >= cards.length - 1) return;
+  const fc = document.getElementById('flashcard');
+  fc.classList.add('slide-left');
+  setTimeout(() => {
+    fc.classList.remove('slide-left');
+    currentIndex++;
+    renderCard();
+    updateStats();
+  }, 400);
+}
+
+function prevCard() {
+  if (currentIndex <= 0) return;
+  const fc = document.getElementById('flashcard');
+  fc.classList.add('slide-right');
+  setTimeout(() => {
+    fc.classList.remove('slide-right');
+    currentIndex--;
+    renderCard();
+    updateStats();
+  }, 400);
+}
+
+function shuffleCards() {
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  currentIndex = 0;
+  knownSet.clear();
+  dunnoSet.clear();
+  renderCard();
+  updateStats();
+}
+
+function markKnow() {
+  knownSet.add(currentIndex);
+  dunnoSet.delete(currentIndex);
+  updateStats();
+  if (knownSet.size + dunnoSet.size >= cards.length) {
+    showCompletion();
+    return;
+  }
+  if (currentIndex < cards.length - 1) nextCard();
+  else showCompletion();
+}
+
+function markDunno() {
+  dunnoSet.add(currentIndex);
+  knownSet.delete(currentIndex);
+  updateStats();
+  if (knownSet.size + dunnoSet.size >= cards.length) {
+    showCompletion();
+    return;
+  }
+  if (currentIndex < cards.length - 1) nextCard();
+  else showCompletion();
+}
+
+function updateStats() {
+  document.getElementById('totalCount').textContent = cards.length;
+  document.getElementById('knowCount').textContent = knownSet.size;
+  document.getElementById('dunnoCount').textContent = dunnoSet.size;
+  const pct = cards.length > 0 ? ((knownSet.size + dunnoSet.size) / cards.length * 100) : 0;
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+function showCompletion() {
+  isCompleted = true;
+  document.getElementById('cardArea').style.display = 'none';
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('assessRow').style.display = 'none';
+  document.getElementById('counter').style.display = 'none';
+  document.getElementById('finalKnow').textContent = knownSet.size;
+  document.getElementById('finalDunno').textContent = dunnoSet.size;
+  document.getElementById('completion').classList.add('show');
+}
+
+function restart() {
+  init();
+}
+
+function restartWeak() {
+  const weakCards = [];
+  dunnoSet.forEach(i => { if (cards[i]) weakCards.push(cards[i]); });
+  if (weakCards.length === 0) {
+    alert('ไม่มีข้อที่ต้องทบทวน!');
+    return;
+  }
+  isCompleted = false;
+  cards = weakCards;
+  currentIndex = 0;
+  isFlipped = false;
+  knownSet.clear();
+  dunnoSet.clear();
+  renderCard();
+  updateStats();
+  document.getElementById('completion').classList.remove('show');
+  document.getElementById('cardArea').style.display = '';
+  document.getElementById('controls').style.display = '';
+  document.getElementById('assessRow').style.display = '';
+  document.getElementById('counter').style.display = '';
+}
+
+// === KEYBOARD ===
+document.addEventListener('keydown', (e) => {
+  // Completion screen shortcuts
+  if (isCompleted) {
+    if (e.key === 'r' || e.key === 'R' || e.key === 'ร') { restart(); return; }
+    if (e.key === 't' || e.key === 'T' || e.key === 'ถ') { restartWeak(); return; }
+    return;
+  }
+  // Normal card shortcuts
+  if (e.code === 'Space') { e.preventDefault(); flipCard(); }
+  if (e.code === 'ArrowRight') nextCard();
+  if (e.code === 'ArrowLeft') prevCard();
+  if (e.key === '1') markKnow();
+  if (e.key === '2') markDunno();
+});
+
+// === TOUCH SWIPE ===
+let touchStartX = 0;
+document.getElementById('cardArea').addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+}, { passive: true });
+document.getElementById('cardArea').addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].screenX - touchStartX;
+  if (Math.abs(diff) > 60) {
+    if (diff < 0) nextCard();
+    else prevCard();
+  }
+}, { passive: true });
+
+// === START ===
+init();
+</script>
+
+</body>
+</html>
